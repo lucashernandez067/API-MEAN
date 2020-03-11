@@ -1,0 +1,47 @@
+1. crear la estrcutura general de los archivos
+        - servidor
+            - controllers
+            - models
+            - routes
+            index.js
+            database.js
+2. iniciar npm con 'npm init --yes'
+3. instalar express con 'npm install express'
+4. (en index.js) requirir express guardamdo desde una constante 'express' para ejecutarlo
+5. crear una constante 'app' para guardar la ejecución de express
+6. establecer el puerto para conectar
+7. para hacerlo apuntar a listen con app para que se ejecute listen con express el parametro será el puerto
+8. instalar nodemon con 'npm install nodemon -D' para que sea una dependencia del desarrollo.
+9. modificar el package.json añadiendo a "scripts" "dev" con "nodemon (carpeta del servidor)/index.js"
+    - Middelwares
+10. instalar morgan 'npm install morgan'
+11. (en index.js) requirir morgan guardamdo desde una constante 'morgan' para ejecutarlo
+12. ejetuar morgan apuntando a use con app y dando como parametro morgan y en morgan el parametro 'dev'
+13. añadir el formato JSON apuntando a use con app y dando como parametro express luego instanciar json()
+    - database
+14. instalar mongoose 'npm install mongoose'
+15. (en database.js) requirir mongoose guardamdo desde una constante 'mongoose' para ejecutarlo
+16. crear una constante con la uri de mongodb "mongodb://localhost/(nombre de la db) (aquí se creará la base de datos si no existe)
+17. apuntar a exports con la constante mongoose y colocarle como parametro la uri
+18. 'module.exports = mongoose
+19. promesa de la conexión en el anterior paso
+20. (en index.js) requirir seleccionando la ubicación mongoose guardamdo desde una constante '{ mongoose }' para ejecutarlo
+    - routes
+21. (en (nombre).routes.js) requirir express guardamdo desde una constante 'express' para ejecutarlo
+22. crear una constante router = express.Router()
+23. module.exports = Router
+24. crear routes
+25. (en index.js) usar app.use para requerir las rutas
+26. para añadir campos en la uri añadimos '/ejemplo' dentro del anterior app.use
+    - models
+27. (en el modelo.js) requerir mongoose
+28. crear una constante '{ Schema }' y asignarle mongoose
+29. para modelar los datos que tendrá la db se usa const (Modelo)Schema new Schema({});
+30. para definir cada columna: (columna): { type: (tipo de dato), required: (true || false) }
+31. module.exports = mongoose.model('(Modelo)', (Modelo)Schema);
+    - Controllers
+32. const (nombre)Controller = {};
+33. module.exports = (nombre)Controller
+34. requerir el modelo en el controlador
+35. requerir el controlador en la ruta
+36. (rutas.js) router.get('/', (nombre)Controller.get(nombre)); definiendo la ruta con el controlador respectivo
