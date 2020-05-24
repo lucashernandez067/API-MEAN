@@ -1,0 +1,60 @@
+<div *ngIf="!autores">
+    <app-carga></app-carga>
+</div>
+
+<div *ngIf="autores && autores.length == 0">
+    <div class="center">
+        No hay registros para mostrar
+    </div>
+</div>
+
+<div class="row" *ngFor='let autor of autores'>
+    <div class="col s12 m10 l8  push-m1 push-l2">
+        <div class="card">
+            <div class="card-content">
+                <div class="row">
+
+                    <div class="col s12 m4">
+                        <img class="responsive-img" src="{{url + 'get-image/' + autor.image}}"
+                            alt="Foto de {{autor.nombre}} {{autor.apellido}}" *ngIf='autor.image'>
+                        <img class="responsive-img" src="../../../assets/images/defalult.png"
+                            alt="Foto de {{autor.nombre}} {{autor.apellido}}" *ngIf='!autor.image'>
+                    </div>
+
+                    <div class="col s12 m8">
+                        <p><span class="card-title">{{autor.nombre}} {{autor.apellido}}</span></p>
+                        <p style="margin-bottom: 5px;"><b>Fecha de Nacimiento: </b>{{autor.fecha_nacimiento}}
+                        </p>
+                        <p style="margin-bottom: 5px;" *ngIf=(autor.fecha_fallecimiento)><b>Fecha de
+                                Fallecimiento:
+                            </b>{{autor.fecha_fallecimiento}}
+                            <span>({{autor.fecha_fallecimiento | tiempovivido: autor.fecha_nacimiento}}
+                                años)</span>
+                        </p>
+                        <p style="margin-bottom: 5px;" *ngIf=(!autor.fecha_fallecimiento)><b>Edad:
+                            </b><span>{{autor.fecha_nacimiento | edad}}</span></p>
+                        <p style="margin-bottom: 5px;"><b>Especialidad: </b>{{autor.especialidad}}</p>
+                        <p style="margin-bottom: 5px;"><b>Nacionalidad: </b>{{autor.nacionalidad}}</p>
+                        <p style="margin-bottom: 5px;"><span class="activator text-darken-4"><b>Descripcion:
+                                </b><button title="Mostrar descripción" class="btn-flat"><i
+                                        class="material-icons">open_in_new</i></button></span></p>
+                    </div>
+                </div>
+                <div class="right-align">
+                    <a [routerLink]="['/autores/ver', autor._id]" title="Ver" style="margin-right: 3px;"
+                        class="btn-floating waves-effect waves-darken bg-secondary"><i
+                            class="material-icons">remove_red_eye</i></a>
+                    <a [routerLink]="['/autores/editar', autor._id]" title="Editar datos" style="margin-right: 3px;"
+                        class="btn-floating waves-effect waves-light bg-edit"><i class="material-icons">edit</i></a>
+                    <a (click)="delete(autor._id)" title="Eliminar" class="btn-floating waves-effect waves-darken bg-danger"><i
+                            class="material-icons">delete</i></a>
+                </div>
+            </div>
+            <div class="card-reveal">
+                <span class="card-title grey-text text-darken-4">Descripción<i title="cerrar"
+                        class="material-icons right">close</i></span>
+                {{autor.descripcion}}
+            </div>
+        </div>
+    </div>
+</div>

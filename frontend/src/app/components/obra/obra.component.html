@@ -1,0 +1,28 @@
+<div class="container" *ngIf="obra">
+    <div class="row">
+        <br>
+        <a [routerLink]="['/obras']">Volver</a>
+    </div>
+    
+    <div class="row">
+        <div class="card">
+            <div class="col s12 m5">
+                <img class="materialboxed responsive-img" width="650" src="{{url + 'get-image/' + obra.image}}"
+                    alt="Foto de {{obra.nombre}}" *ngIf='obra.image'>
+                <img class="responsive-img" src="../../../assets/images/defalult_2.png"
+                    alt="Foto de {{obra.nombre}}" *ngIf='!obra.image'>
+            </div>
+            <div class="col s12 m7">
+                <h3>{{obra.nombre}}</h3>
+                <hr>
+                <p>{{obra.informacion}}</p>
+                <p style="margin-bottom: 5px;"><b>Categoria: </b>{{obra.categoria}}
+                </p>
+                <p style="margin-bottom: 5px;"><b>Ubicación: </b>{{obra.ubicacion}}
+                </p>
+                <p style="margin-bottom: 5px;"><b>Fecha de Creación: </b>{{obra.fecha}}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,32 @@
+/*@import '../../../../handlebars-css/css/styles.hbs';*/
+
+.afu-attach-pin {
+    width: 50% !important;
+    text-decoration: none !important;
+    color: #fff !important;
+    background-color: #c2185b !important;
+    text-align: center !important;
+    letter-spacing: .5px !important;
+    -webkit-transition: background-color .2s ease-out !important;
+    transition: background-color .2s ease-out !important;
+    cursor: pointer !important;
+}
+
+.container-image {
+    border-color: black !important;
+    border-width: 0.1px !important;
+    border-style: solid !important;
+    padding: 7px !important;
+}
+
+.uppercase {
+    text-transform: uppercase;
+}
+
+.lowercase {
+    text-transform: lowercase;
+}
+
+.capitalize {
+    text-transform: capitalize;
+}

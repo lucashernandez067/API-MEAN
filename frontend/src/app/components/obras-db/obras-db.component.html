@@ -1,0 +1,39 @@
+<div *ngIf="!obras">
+    <app-carga></app-carga>
+</div>
+
+<div *ngif="obras && obras.length == 0">
+    <div class="center">
+        No hay registros para mostrar
+    </div>
+</div>
+
+<div class="service-list">
+    <div class="list" *ngFor='let obra of obras'>
+        <div class="card">
+            <div class="card-image">
+                <img class="responsive-img" src="{{url + 'get-image/' + obra.image}}" alt="Foto de {{obra.nombre}}"
+                    *ngIf='obra.image'>
+                <img class="responsive-img" src="../../../assets/images/defalult_2.png" alt="Foto de {{obra.nombre}}"
+                    *ngIf='!obra.image'>
+                <span style="text-shadow: -1px 0 #000, 1px 0 #000, 0 1px #000, 0 -1px #000;"
+                    class="card-title"><b>{{obra.nombre}} ({{obra.fecha | year}})</b></span>
+                <div class="right-align ">
+                    <a [routerLink]="['/obras/ver', obra._id]" title="Ver" style="margin-right: 90px;"
+                        class="btn-floating halfway-fab waves-effect waves-darken bg-secondary"><i
+                            class="material-icons">remove_red_eye</i></a>
+                    <a [routerLink]="['/obras/editar', obra._id]" title="Editar datos" style="margin-right: 45px;"
+                        class="btn-floating halfway-fab waves-effect waves-light bg-edit"><i
+                            class="material-icons">edit</i></a>
+                    <a (click)="delete(obra._id)" title="Eliminar"
+                        class="btn-floating halfway-fab waves-effect waves-darken bg-danger"><i
+                            class="material-icons">delete</i></a>
+                </div>
+            </div>
+            <div class="card-content">
+                <p style="margin-bottom: 5px;"><b>Información: </b>{{obra.informacion}}</p>
+                <p><b>Categoria: </b>{{obra.categoria}}</p>
+            </div>
+        </div>
+    </div>
+</div>

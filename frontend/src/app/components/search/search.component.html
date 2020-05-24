@@ -1,0 +1,12 @@
+<div class="row">
+    <form #searchForm="ngForm" (ngSubmit)="goSearch()" autocomplete="off">
+        <div class="input-field col s5 push-s3">
+            <input id="buscar" type="text" name="search" value="{{searchString}}" [(ngModel)]="searchString" pattern="[a-zA-Z0-9áéíóúñ]+" required>
+            <label for="buscar">Buscar</label>
+        </div>
+        <div class="input-field col s1 push-s3">
+            <button title="buscar autor" class="btn-floating bg-primary" type="submit" [disabled]="searchForm.invalid"><i
+                    class="material-icons">search</i></button>        
+        </div>
+    </form>
+</div>

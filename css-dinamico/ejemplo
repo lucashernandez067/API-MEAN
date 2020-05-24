@@ -1,0 +1,554 @@
+//
+// Copyright (C) 2020 - Banco Davivienda S.A. y sus filiales.
+//
+
+import { provide } from '@config/ioc/inversify.config'
+import { TYPES } from '@config/ioc/types'
+import { IConfig } from '@config/vars'
+import { MBAAS_ERRORS, ServiceError } from '@models/serviceError.model'
+// import { IAuthService } from '@services/auth'
+// import { ICryptoService } from '@services/crypto'
+import { ILogger } from '@services/loggerService'
+import { IPersistenceService } from '@services/persistence'
+import { IStorageService } from '@services/storageService'
+import * as fileSytem from 'fs'
+import handlebars from 'handlebars'
+import { inject } from 'inversify'
+import joi from 'joi'
+
+import { IAliadosService } from '.'
+import { getForm } from './aliadosService.model'
+
+@provide(TYPES.IAliadosService)
+export class AliadosService implements IAliadosService {
+  constructor(
+    @inject(TYPES.IConfig) private config: IConfig,
+    @inject(TYPES.ILogger) private logger: ILogger,
+    // @inject(TYPES.IAuthService) private auth: IAuthService,
+    // @inject(TYPES.ICrypto) private crypto: ICryptoService,
+    @inject(TYPES.IPersistenceService) private persistence: IPersistenceService,
+    @inject(TYPES.IStorageService) private storage: IStorageService
+  ) {}
+
+  /**
+   * Obtiene la información del aliado.
+   * @async
+   * @param {idAliado} idAliado ID del aliado
+   * @returns {object} Devuelve la información del aliado
+   * @memberof AliadosService
+   */
+
+  public getAliado = async (idAliado: string) => {
+    this.logger.debug(`Aliados: Obtener Aliado > Inicio - Obtener Aliado`)
+
+    let aliado
+    try {
+      aliado = await this.findAliado(idAliado)
+    } catch (error) {
+      this.logger
+        .debug(`GET /v1/aliados/${idAliado} - Error datos al obtener persistencia:
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+
+    const respuesta: any = {
+      // Se depura el objeto para enviarlo lo más plano posible con una función ternaria
+      aliado: aliado.default.data ? aliado.default.data : aliado,
+    }
+
+    return respuesta
+  }
+
+  /**
+   * Función que actualiza los Forms que envia el frontEnd por cada aliado.
+   * @async
+   * @param {object} updateAliado Objeto con la información del aliado
+   * @returns {object} Devuelve un booleano indicando que se actulizo de manera correcta
+   * @memberof AliadosService
+   */
+  public updateAliado = async (idAliado: string, updateAliado: any) => {
+    this.logger.debug(`Aliados: Actualizar Aliado > Inicio - Actualizar Aliado`)
+    const kind = this.config.getVars().back.kindPersistence
+
+    // Busco al aliado para poder obtener la informacion de la data
+    let aliado
+    try {
+      aliado = await this.findAliado(idAliado)
+    } catch (error) {
+      this.logger
+        .debug(`PUT /v1/aliados/${idAliado} - Error datos al obtener persistencia:
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.invalid_data_format, error)
+    }
+
+    // Si el aliado no tiene ningún formulario guardado, se crea el objeto dataForms como empty
+    if (!aliado.default.data.dataForms) aliado.default.data.dataForms = []
+
+    // En la variable dataForms se encuentran todos los forms enviados por el front
+    // Busco el indice en el array de objetos, y dependiendo si esta actualizo el contenido sino agrego el objeto
+    const index = parseInt(
+      aliado.default.data.dataForms.findIndex(
+        (item: any) => item.form === updateAliado.form
+      ),
+      10
+    )
+
+    if (index === -1) {
+      aliado.default.data.dataForms.push({
+        [updateAliado.form]: updateAliado.content,
+        form: updateAliado.form,
+      })
+    } else {
+      Object.assign(aliado.default.data.dataForms[index], {
+        [updateAliado.form]: updateAliado.content,
+        form: updateAliado.form,
+      })
+    }
+
+    let newDataAliado
+    try {
+      newDataAliado = await this.persistence.setData(kind, idAliado, aliado)
+    } catch (error) {
+      throw new ServiceError(MBAAS_ERRORS.invalid_data_format, error)
+    }
+
+    // Se genera el CSS cada vez que se actualiza
+    try {
+      this.generateCSS(idAliado)
+    } catch (error) {
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+
+    const respuesta: any = {
+      newDataAliado,
+    }
+    return respuesta
+  }
+
+  /**
+   * Funcion que que retorno el formulario del aliado por el ID del mismo
+   * @async
+   * @param {string} idAliado
+   * @param {string} form
+   * @returns {object} Devuelve la información del formulario solicitado
+   * @memberof AliadosService
+   */
+  public getFormAliado = async (getFormAliado: any) => {
+    this.logger.debug(
+      `Aliados: Obtener Form Aliado > Inicio - Obtener Form Aliado`
+    )
+    // Se valida el ingreso del objecto del request
+    const validateGetFormRequest = joi.validate(getFormAliado, getForm)
+    if (validateGetFormRequest.error) {
+      this.logger.error(
+        `POST /v1/aliados/obtenerForm - Formato de request invalido: ${
+          validateGetFormRequest.error
+        }`
+      )
+      throw new ServiceError(
+        MBAAS_ERRORS.invalid_data_format,
+        validateGetFormRequest.error
+      )
+    }
+
+    let aliado
+    try {
+      aliado = await this.findAliado(getFormAliado.idAliado)
+    } catch (error) {
+      this.logger
+        .debug(`POST /v1/aliados/obtenerForm - Error datos al obtener persistencia:
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.invalid_data_format, error)
+    }
+
+    if (!aliado.default.data.dataForms) {
+      throw new ServiceError(
+        MBAAS_ERRORS.data_not_found,
+        new Error('Formulario no encontrado')
+      )
+    }
+
+    // Se Filtra en el array de formulario con el id del form, y se guarda en una variable nueva
+    const form = aliado.default.data.dataForms.filter(
+      (item: any) => item.form === getFormAliado.form
+    )
+
+    // Valido si no se encuentra el Formulario solicitado en el servicio de persistencia
+    if (form.length <= 0) {
+      throw new ServiceError(
+        MBAAS_ERRORS.data_not_found,
+        new Error('Formulario no encontrado')
+      )
+    }
+
+    // Se genera el objecto de respuesta del formulario cons los valores dentro de content
+    // El identificador dell formulario dentro del tag form
+    const respuesta: any = {
+      content: form[0][getFormAliado.form],
+      form: form[0].form,
+    }
+    return respuesta
+  }
+
+  /**
+   * Funcion que que retorno el formulario del aliado por el ID del mismo
+   * @async
+   * @param {string} idAliado Id del aliado a guardar
+   * @param {string} dataAliado Información para generar el aliado
+   * @returns {object} Devuelve la información del formulario solicitado
+   * @memberof AliadosService
+   */
+  public crateAliado = async (idAliado: string, dataAliado: any) => {
+    this.logger.debug(`Aliados: Crear aliado > Inicio`)
+    // Busco al aliado para poder obtener la informacion de la data
+
+    // let aliado
+    // try {
+    //   aliado = await this.validateExistAliado(idAliado)
+    // } catch (error) {
+    //   this.logger
+    //     .debug(`POST /v1/aliados/crear - Error datos al obtener persistencia:
+    //   ${error.message ? error.message : 'error'}`)
+    //   throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    // }
+    // this.logger.info(JSON.stringify(aliado))
+
+    // if (aliado) {
+    //   throw new ServiceError(
+    //     MBAAS_ERRORS.invalid_data_format,
+    //     new Error('Aliado ya existe')
+    //   )
+    // }
+
+    try {
+      await this.createAliadoKind(idAliado, dataAliado)
+    } catch (error) {
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+
+    return true
+
+    // Se guarda el archivo style.css en la nube usando el servicio de google storage
+    try {
+      await this.storage.createFolder(idAliado)
+    } catch (error) {
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+
+    // this.logger.info(JSON.stringify(aliado))
+
+    // const respuesta: any = {
+    //   aliado,
+    // }
+
+    // return respuesta
+  }
+
+  /**
+   * Funcion que retorno el formulario del aliado por el ID del mismo
+   * @async
+   * @param {string} idAliado
+   * @param {string} form
+   * @returns {object} Devuelve la información del formulario solicitado
+   * @memberof AliadosService
+   */
+  public guardarForm = async (getFormAliado: any) => {
+    this.logger.debug(`Aliados: Guardar Form Aliado > Inicio - Obtener Form`)
+
+    // Se valida el ingreso del objecto del request
+    const validateGetFormRequest = joi.validate(getFormAliado, getForm)
+    if (validateGetFormRequest.error) {
+      this.logger.error(
+        `POST /v1/aliados/obtenerForm - Formato de request invalido: ${
+          validateGetFormRequest.error
+        }`
+      )
+      throw new ServiceError(
+        MBAAS_ERRORS.invalid_data_format,
+        validateGetFormRequest.error
+      )
+    }
+
+    // Busco al aliado para poder obtener la informacion de la data
+    let aliado
+    try {
+      aliado = await this.findAliado(getFormAliado.idAliado)
+    } catch (error) {
+      this.logger
+        .debug(`POST /v1/aliados/obtener-form - Error datos al obtener persistencia:
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.invalid_data_format, error)
+    }
+
+    // Se Filtra en el array de formulario con el id del form, y se guarda en una variable nueva
+    const form = aliado[0].default.data.dataForms.filter(
+      (item: any) => item.form === getFormAliado.form
+    )
+
+    // Valido si no se encuentra el Formulario solicitado en el servicio de persistencia
+    if (form.length <= 0) {
+      throw new ServiceError(
+        MBAAS_ERRORS.data_not_found,
+        new Error('Formulario no encontrado')
+      )
+    }
+
+    const respuesta: any = {
+      form,
+    }
+    return respuesta
+  }
+
+  /**
+   * Funcion que genera el CSS del aliado y lo guarda en GCP
+   * @async
+   * @param {string} idAliado
+   * @returns {boolean} Devuelve un booleano indicando que se realizo de manera correcta la función
+   * @memberof AliadosService
+   */
+  public generateCSS = async (idAliado: string) => {
+    this.logger.debug(`Aliados: Generar CSS > Inicio`)
+
+    // Se busca el archivo template.hsb para generar los CSS de los aliados
+    const pathFileStorage = this.config.getVars().cssTemplate
+
+    let file
+    try {
+      file = await this.storage.getDataFile(pathFileStorage)
+    } catch (error) {
+      this.logger.error(
+        `PUT /v1/aliados/${idAliado} - No se encuentra el archivo ['styleTemplate.hbs']`
+      )
+      throw new ServiceError(MBAAS_ERRORS.data_not_found, error)
+    }
+    let aliado
+    // Busco al aliado para poder obtener la informacion de la data
+    try {
+      aliado = await this.findAliado(idAliado)
+    } catch (error) {
+      this.logger
+        .debug(`PUT /v1/aliados/${idAliado} - Error datos al obtener persistencia:
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.invalid_data_format, error)
+    }
+
+    // Se obtiene el formulario del aliado, y se guarda en una variable
+    const dataForm = aliado.default.data.dataForms
+
+    const dataHandlebars: object = {}
+
+    // Se convierte el dataForm en un flat array
+    dataForm.forEach((item: any) => {
+      delete item.form
+      return Object.assign(dataHandlebars, item)
+    })
+
+    // Se generá la información que será guardada en el archivo CSS usando el template de Handlebars
+    const template = handlebars.compile(file)
+    const dataTemplate = template(dataHandlebars)
+    const pathFile = `./${idAliado}.css`
+
+    // Funcion que que crea el archivo CSS
+    try {
+      await this.createCSSFile(dataTemplate, pathFile)
+    } catch (error) {
+      throw new ServiceError(MBAAS_ERRORS.invalid_data_format, error)
+    }
+
+    // Se guarda el archivo style.css en la nube usando el servicio de google storage
+    try {
+      await this.storage.saveDataFile(idAliado, pathFile)
+    } catch (error) {
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+
+    // Se elimina el archivo temporal del proyecto
+    try {
+      this.deleteCSSFile(pathFile)
+    } catch (error) {
+      this.logger.debug(
+        `PUT /v1/aliados/${idAliado} - Error al eliminar el archivo CSS`
+      )
+      throw new ServiceError(MBAAS_ERRORS.invalid_data_format, error)
+    }
+
+    const respuesta: any = {
+      aliado: true,
+    }
+    return respuesta
+  }
+
+  /**
+   * Funcion devuelve todos los aliados creados
+   * @async
+   * @returns {object} Devuelve los aliados
+   * @memberof AliadosService
+   */
+  public getAllAliados = async () => {
+    this.logger.debug(`Aliados: Obtener todos los aliados > Inicio`)
+    const kind = this.config.getVars().back.kindPersistence
+    const keyAliados = 'aliados'
+    let aliados
+    try {
+      aliados = await this.persistence.getData(kind, keyAliados)
+      if (aliados instanceof Array) aliados = aliados[0]
+    } catch (error) {
+      this.logger.debug(
+        `GEt /v1/aliados/obtener/Aliados - Error datos al obtener persistencia:
+      ${error.message ? error.message : 'error'}`
+      )
+    }
+    // Se filtran solo los activos
+    const result = aliados.default.aliados.filter(
+      (item: any) => item.status === '1' || item.status === 1
+    )
+    return result ? result : aliados
+  }
+
+  /**
+   * Funcion que busca el aliado dentro del servicio de persistencia
+   * @async
+   * @param {string} idAliado
+   * @returns {object} Devuelve la información del aliado
+   * @memberof AliadosService
+   */
+  private findAliado = async (idAlido: string) => {
+    const kind = this.config.getVars().back.kindPersistence
+    let aliado
+    try {
+      aliado = await this.persistence.getData(kind, idAlido)
+      if (aliado instanceof Array) aliado = aliado[0]
+    } catch (error) {
+      this.logger.error(`POST - Error datos al obtener persistencia [findAliado]
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+    // Valido si no se encuentra el Aliado en el servicio de persistencia
+    if (!aliado || aliado === null || aliado === 'null') {
+      throw new ServiceError(
+        MBAAS_ERRORS.data_not_found,
+        new Error('Aliado no encontrado')
+      )
+    }
+    return aliado
+  }
+
+  /**
+   * Funcion que crea el archivo CSS
+   * @async
+   * @param {string} idAliado
+   * @returns {object} Devuelve la información del aliado
+   * @memberof AliadosService
+   */
+  private createCSSFile = async (dataTemplate: any, pathFile: string) => {
+    this.logger.debug(`Aliados > Inicio - Crear CSS File`)
+    try {
+      return fileSytem.writeFileSync(pathFile, dataTemplate)
+    } catch (error) {
+      this.logger.debug(
+        'POST /v1/aliados/guardar - Error al crear el archivo CSS'
+      )
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+  }
+
+  /**
+   * Funcion que crea el archivo CSS
+   * @async
+   * @param {string} idAliado
+   * @returns {object} Devuelve la información del aliado
+   * @memberof AliadosService
+   */
+  private deleteCSSFile = async (pathFile: string) => {
+    this.logger.debug(`Aliados > Inicio - Eliminar CSS File Local`)
+    try {
+      return fileSytem.unlinkSync(pathFile)
+    } catch (error) {
+      this.logger.debug(
+        'PUT /v1/aliados/aliado - Error al eliminar el archivo CSS'
+      )
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+  }
+
+  /**
+   * Funcion que busca el aliado dentro del servicio de persistencia
+   * @async
+   * @param {string} idAliado
+   * @returns {booelan} Devuelve un boolean false si no existe y true si existe
+   * @memberof AliadosService
+   */
+  private validateExistAliado = async (idAlido: string) => {
+    this.logger.debug(
+      `Aliados > Inicio -Valiadar Existencia Aliado Eliminar CSS File Local`
+    )
+    const kind = this.config.getVars().back.kindPersistence
+    let aliado
+    try {
+      aliado = await this.persistence.getData(kind, idAlido)
+      if (aliado) return true
+    } catch (error) {
+      this.logger.error(`POST - Error datos al obtener persistencia [findAliado]
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+    return false
+  }
+
+  /**
+   * Funcion que actualiza el kind de aliados
+   * @async
+   * @param {string} idAliado
+   * @returns {booelan} Devuelve un boolean indicanddo si es exitoso el proceso
+   * @memberof AliadosService
+   */
+  private createAliadoKind = async (idAliado: string, dataAliado: any) => {
+    const kind = this.config.getVars().back.kindPersistence
+    const keyAliados = 'aliados'
+    if (!dataAliado.data.dataForms) dataAliado.data.dataForms = []
+    try {
+      await this.persistence.setData(kind, idAliado, { default: dataAliado })
+    } catch (error) {
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+    let aliadosKind
+    try {
+      aliadosKind = await this.persistence.getData(kind, keyAliados)
+      if (aliadosKind instanceof Array) aliadosKind = aliadosKind[0]
+    } catch (error) {
+      this.logger.error(`POST - Error datos al obtener persistencia
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+    if (!aliadosKind) {
+      aliadosKind = {
+        default: {
+          aliados: [
+            { idAliado, status: dataAliado.status ? dataAliado.status : 1 },
+          ],
+        },
+      }
+    } else {
+      const index = parseInt(
+        aliadosKind.default.aliados.findIndex(
+          (item: any) => item.idAliado === idAliado
+        ),
+        10
+      )
+      if (index === -1) {
+        aliadosKind.default.aliados = [
+          ...aliadosKind.default.aliados,
+          { idAliado, status: 1 },
+        ]
+      }
+    }
+
+    try {
+      return await this.persistence.setData(kind, keyAliados, aliadosKind)
+    } catch (error) {
+      this.logger.error(`POST - Error datos al obtener persistencia
+      ${error.message ? error.message : 'error'}`)
+      throw new ServiceError(MBAAS_ERRORS.internal_server_error, error)
+    }
+  }
+}

@@ -1,0 +1,19 @@
+.service-list{
+    display: block;
+    column-count: 2;
+}
+
+.service-list .list{
+    break-inside: avoid;
+    margin-bottom: 15px;
+    width: 100%;
+    max-width:  none;
+    
+}
+
+@media only screen and (min-width: 320px) and (max-width: 767px){
+    .service-list{
+        margin: 15px;
+        column-count: 1;
+    }
+}

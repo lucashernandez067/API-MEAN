@@ -1,0 +1,33 @@
+<div class="container" *ngIf="autor">
+    <div class="row">
+        <br>
+        <a [routerLink]="['/autores']">Volver</a>
+    </div>
+    <div class="row">
+        <div class="card">
+            <div class="col s12 m5">
+                <img class="responsive-img materialboxed" src="{{url + 'get-image/' + autor.image}}"
+                    alt="Foto de {{autor.nombre}} {{autor.apellido}}" *ngIf='autor.image'>
+                <img class="responsive-img" src="../../../assets/images/defalult.png"
+                    alt="Foto de {{autor.nombre}} {{autor.apellido}}" *ngIf='!autor.image'>
+            </div>
+            <div class="col s12 m7">
+                <h3>{{autor.nombre}} {{autor.apellido}}</h3>
+                <hr>
+                <p>{{autor.descripcion}}</p>
+                <p style="margin-bottom: 5px;"><b>Fecha de Nacimiento: </b>{{autor.fecha_nacimiento}}
+                </p>
+                <p style="margin-bottom: 5px;" *ngIf=(autor.fecha_fallecimiento)><b>Fecha de
+                        Fallecimiento:
+                    </b>{{autor.fecha_fallecimiento}}
+                    <span>({{autor.fecha_fallecimiento | tiempovivido: autor.fecha_nacimiento}}
+                        años)</span>
+                </p>
+                <p style="margin-bottom: 5px;" *ngIf=(!autor.fecha_fallecimiento)><b>Edad:
+                    </b><span>{{autor.fecha_nacimiento | edad}}</span></p>
+                <p style="margin-bottom: 5px;"><b>Especialidad: </b>{{autor.especialidad}}</p>
+                <p style="margin-bottom: 5px;"><b>Nacionalidad: </b>{{autor.nacionalidad}}</p>
+            </div>
+        </div>
+    </div>
+</div>

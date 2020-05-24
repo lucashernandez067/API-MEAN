@@ -1,0 +1,122 @@
+<app-sub-header [header]="1"></app-sub-header>
+
+<div>
+    <div class="container">
+        <div class="row">
+            <div class="center">
+                {{subtitle}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col s12 m10 l8  push-m1 push-l2">
+            <div class="card">
+                <div class="card-content">
+                    <form #autorForm="ngForm" (ngSubmit)="onSubmit()">
+                        <div class="row">
+                            <div class="input-field col s6">
+                                <input id="nombre" type="text" class="validate" name="nombre" #nombre="ngModel"
+                                    [(ngModel)]="autor.nombre" required pattern="[a-zA-Zñáéíóú ]+" autofocus>
+                                <label for="nombre" *ngIf="!is_edit">Nombre</label>
+                                <span class="helper-text" data-error="erróneo" data-success="correcto">Ingrese el
+                                    nombre</span>
+                            </div>
+                            <div class="input-field col s6">
+                                <input id="apellido" type="text" class="validate" name="apellido" #apellido="ngModel"
+                                    [(ngModel)]="autor.apellido" required pattern="[a-zA-Zñáéíóú ]+">
+                                <label for="apellido" *ngIf="!is_edit">Apellido</label>
+                                <span *ngIf="!nombre.valid " class="helper-text" data-error="erróneo"
+                                    data-success="correcto">Ingrese el apellido</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <textarea id="descripcion" class="materialize-textarea" name="descripcion"
+                                    #descripcion="ngModel" [(ngModel)]="autor.descripcion" required></textarea>
+                                <label for="descripcion" *ngIf="!is_edit">Descripción</label>
+                                <span class="helper-text" data-error="erróneo" data-success="correcto">Ingrese una
+                                    descripción o biografia del autor</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-field col s6">
+                                <input id="especialidad" type="text" class="validate" name="especialidad"
+                                    #especialidad="ngModel" [(ngModel)]="autor.especialidad" required
+                                    pattern="[a-zA-Zñáéíóú, ]+">
+                                <label for="especialidad" *ngIf="!is_edit">Especialidad</label>
+                                <span class="helper-text" data-error="erróneo" data-success="correcto">Ingrese la
+                                    especialidad </span>
+                            </div>
+                            <div class="input-field col s6">
+                                <input id="nacionalidad" type="text" class="validate" name="nacionalidad"
+                                    #nacionalidad="ngModel" [(ngModel)]="autor.nacionalidad" required
+                                    pattern="[a-zA-Zñáéíóú ]+">
+                                <label for="nacionalidad" *ngIf="!is_edit">Nacionalidad</label>
+                                <span class="helper-text" data-error="erróneo" data-success="correcto">País de
+                                    nacimiento </span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <input id="fecha_nacimiento" type="date" class="" name="fecha_nacimiento"
+                                    #fecha_nacimiento="ngModel" [(ngModel)]="autor.fecha_nacimiento" required>
+
+                                <span class="helper-text" data-error="erróneo" data-success="correcto">Ingrese la fecha
+                                    de nacimiento</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col s3">
+                                <label>
+                                    <input type="checkbox" onchange="showHide(this.checked)" name="fallecido"
+                                        #fallecido="ngModel" [(ngModel)]="autor.fallecido" />
+                                    <span>Fallecido</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="row" id="fecha-fallecimiento-div" style="display: none;">
+                            <div class="input-field col s12">
+                                <input id="fecha-fallecimiento" type="date" class="" name="fecha_fallecimiento"
+                                    #fecha_fallecimiento="ngModel" [(ngModel)]="autor.fecha_fallecimiento">
+                            </div>
+                        </div>
+                        <label>Foto del autor</label>
+                        <div class="row container-image">
+                            <div class="col s6" style="margin-left: 10px;">
+                                <div *ngIf='autor.image'>
+                                    <p>Vista Previa:</p>
+                                    <br>
+                                    <img class="responsive-img" src="{{url + 'get-image/' + autor.image}}"
+                                        alt="Foto de {{autor.nombre}} {{autor.apellido}}">
+                                </div>
+                                <div *ngIf='!autor.image'>
+                                    <p>Seleccione una foto.</p>
+                                </div>
+                            </div>
+
+                            <div class="input-field col s12">
+                                <div class="file-field input-field">
+                                    <angular-file-uploader [config]="afuConfig" (ApiResponse)="imageUpload($event)">
+                                    </angular-file-uploader>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="center">
+                                <input title="enviar formulario" value="Registrar" class="btn bg-primary"
+                                    type="submit" [disabled]="autorForm.invalid" *ngIf="!is_edit">
+                                <input title="enviar formulario" value="Editar" class="btn bg-edit" type="submit"
+                                    [disabled]="autorForm.invalid" *ngIf="is_edit">
+                                <a title="Cancelar" style="margin-left: 5px;" class="btn bg-danger"
+                                    [routerLink]="['/autores']" *ngIf="is_edit">Cancelar</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

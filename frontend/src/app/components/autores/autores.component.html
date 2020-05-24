@@ -1,0 +1,19 @@
+<div class="row" *ngIf='error'>
+    <div class="center">
+        <h1 class="header center text-secondary">ERROR 503</h1>
+        <i class="large material-icons">mood_bad</i>
+        <h5 class="header col s12 light">servicio <span class="text-primary">no disponible</span></h5>
+    </div>
+</div>
+
+<div class="content" role="main" *ngIf='!error'>
+    <app-sub-header [header]="1"></app-sub-header>
+
+    <div class="container">
+
+        <app-search [desde]="1"></app-search>
+
+        <app-autores-db [autores]="autores"></app-autores-db>
+
+    </div>
+</div>

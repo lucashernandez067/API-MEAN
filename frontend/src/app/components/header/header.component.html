@@ -1,0 +1,28 @@
+<div class="navbar-fixed">
+    <nav class="bg-primary" role="navigation">
+        <div class="nav-wrapper">
+            <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+            <div class="row">                
+                <div class="col s5 push-s1">                        
+                    <a href="#!" class="brand-logo center-align">Museo</a>
+                </div>
+                <div class="col s11 pull-s1">
+                    <ul class="right hide-on-med-and-down">
+                        <li [routerLinkActive]="['active']"><a [routerLink]="['/inicio']">Inicio</a></li>
+                        <li [routerLinkActive]="['active']"><a [routerLink]="['/autores']">Autores</a></li>
+                        <li [routerLinkActive]="['active']"><a [routerLink]="['/obras']">Obras</a></li>                            
+                    </ul>
+                </div>
+            </div>    
+        </div>
+    </nav>
+</div>
+
+
+<ul class="sidenav" id="mobile-demo">
+    <li class="center-align"><h5>Menú</h5></li>
+    <hr>
+    <li [routerLinkActive]="['active']"><a [routerLink]="['/inicio']">Inicio</a></li>
+    <li [routerLinkActive]="['active']"><a [routerLink]="['/autores']">Autores</a></li>
+    <li [routerLinkActive]="['active']"><a [routerLink]="['/obras']">Obras</a></li>   
+</ul>
